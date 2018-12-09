@@ -18,6 +18,7 @@ public:
 
     // Called every frame
     virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+    const TArray<AActor*>& GetPatrolPoints() const;
     
 protected:
 	// Called when the game starts

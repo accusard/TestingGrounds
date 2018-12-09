@@ -2,7 +2,7 @@
 
 #include "ChooseNextWaypoint.h"
 #include "AIController.h"
-#include "PatrollingGuard.h"
+#include "Components/PatrolRoute.h"
 #include "BehaviorTree/BlackboardComponent.h"
 
 
@@ -13,24 +13,28 @@ EBTNodeResult::Type UChooseNextWaypoint::ExecuteTask(UBehaviorTreeComponent& Own
     // Patrol Points
     AAIController* AIController = OwnerComp.GetAIOwner();
     APawn* ControlledPawn = AIController->GetPawn();
-    APatrollingGuard* PatrollingGuard = Cast<APatrollingGuard>(ControlledPawn);
-    TArray<AActor*> PatrolPoints = PatrollingGuard->GetPatrolPoints();
-    if(PatrolPoints.Num() > 0)
+    EBTNodeResult::Type Result = EBTNodeResult::Failed;
+    
+    if(UPatrolRoute* PatrolRouteArray = Cast<AActor>(ControlledPawn)->FindComponentByClass<UPatrolRoute>())
     {
-        // waypoint
-        auto BlackboardComp = OwnerComp.GetBlackboardComponent();
-        auto Index = BlackboardComp->GetValueAsInt(IndexKey.SelectedKeyName);
-        BlackboardComp->SetValueAsObject(WaypointKey.SelectedKeyName, PatrolPoints[Index]);
-        
-        // cycle index
-        int NextIndex = (Index + 1) % PatrolPoints.Num();
-        BlackboardComp->SetValueAsInt(WaypointKey.SelectedKeyName,NextIndex);
-        
-        return EBTNodeResult::Succeeded;
+        TArray<AActor*> PatrolPoints = PatrolRouteArray->GetPatrolPoints();
+        if(PatrolPoints.Num() > 0)
+        {
+            // waypoint
+            auto BlackboardComp = OwnerComp.GetBlackboardComponent();
+            auto Index = BlackboardComp->GetValueAsInt(IndexKey.SelectedKeyName);
+            BlackboardComp->SetValueAsObject(WaypointKey.SelectedKeyName, PatrolPoints[Index]);
+            
+            // cycle index
+            int NextIndex = (Index + 1) % PatrolPoints.Num();
+            BlackboardComp->SetValueAsInt(IndexKey.SelectedKeyName,NextIndex);
+            
+            Result = EBTNodeResult::Succeeded;
+        }
+        else
+        {
+            UE_LOG(LogTemp,Warning,TEXT("The PatrolPoints array is empty."));
+        }
     }
-    else
-    {
-        UE_LOG(LogTemp,Warning,TEXT("The PatrolPoint array is empty."));
-        return EBTNodeResult::Failed;
-    }
+    return Result;
 }
